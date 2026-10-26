@@ -1,32 +1,32 @@
-# สถาปัตยกรรม Codex Config Guard
+# Codex Config Guard architecture
 
-## ส่วนประกอบ
+## Components
 
-| ไฟล์ | หน้าที่ |
+| File | Role |
 |---|---|
-| `guard.py` | แกนหลัก: ตรวจ TOML (`tomllib`), สำรอง, กู้คืน, เฝ้าดู (`watch`) และ CLI |
-| `Guard.ps1` | ตัวเรียก `guard.py` ด้วย Python ที่ระบุใน `runtime.json` |
-| `Install.ps1` / `Install.cmd` | สร้าง `runtime.json` และลงทะเบียน Task Scheduler ชื่อ *Codex Config Guard* |
-| `Verify-Installation.ps1` | ตรวจว่างาน, Python และไฟล์ config อยู่ในสภาพพร้อมใช้ |
-| `Notify.ps1` | แสดง tray balloon เมื่อมีการกู้คืนหรือข้อผิดพลาด |
-| `Status.cmd` / `Restore.cmd` / `Apply-Draft.cmd` | ทางลัดดับเบิลคลิก |
-| `test_guard.py` | unit test ทำงานบนไฟล์จำลองใน `work/` |
+| `guard.py` | Core: TOML validation (`tomllib`), backup, restore, watcher (`watch`) and CLI |
+| `Guard.ps1` | Runs `guard.py` with the Python recorded in `runtime.json` |
+| `Install.ps1` / `Install.cmd` | Writes `runtime.json` and registers the *Codex Config Guard* scheduled task |
+| `Verify-Installation.ps1` | Restarts the task and checks for a fresh heartbeat and a valid config |
+| `Notify.ps1` | Tray balloon on recovery or errors |
+| `Status.cmd` / `Restore.cmd` / `Apply-Draft.cmd` | Double-click shortcuts |
+| `test_guard.py` | Unit tests on mock files in `work/` |
 
-## ลำดับการทำงาน
+## Flow
 
 ```
-config.toml เปลี่ยน ──► รอไฟล์นิ่ง ≥ 3 วินาที ──► validate (tomllib)
-                                              ├─ ผ่าน ─► สำรองลง state/backups (+ SHA-256)
-                                              └─ ไม่ผ่าน ─► ย้ายไฟล์เสียไป state/quarantine
-                                                          ─► ตรวจ hash ซ้ำ ─► atomic replace ด้วยสำเนาล่าสุดที่ผ่าน
+config.toml changes ──► wait until stable ≥ 3 s ──► validate (tomllib)
+                                              ├─ valid ─► back up to state/backups (+ SHA-256)
+                                              └─ invalid ─► move broken file to state/quarantine
+                                                          ─► re-check hash ─► atomic replace with latest verified backup
 ```
 
-- **Atomic write**: เขียนไฟล์ชั่วคราวในโฟลเดอร์เดียวกัน แล้ว `os.replace` จากนั้นอ่านกลับเพื่อยืนยัน hash
-- **Lock**: `state/operation.lock` ป้องกันคำสั่งของเครื่องมือชนกัน; `state/watch.lock` กันตัวเฝ้าดูซ้อน
-- **ความเป็นส่วนตัว**: log ไม่เก็บเนื้อหา config หรือข้อความจาก parser (อาจมีความลับ)
-- **ข้อยกเว้น**: `ConfigError` (TOML เสีย), `ConflictError` (ไฟล์เปลี่ยนระหว่างทำงาน), `NoBackupError` (ไม่มีสำเนาที่ใช้ได้ — จะไม่เขียนค่าเริ่มต้นทับ)
+- **Atomic write**: write a temp file in the same folder, `os.replace`, then read back and verify the hash.
+- **Locks**: `state/operation.lock` serialises tool commands; `state/watch.lock` prevents duplicate watchers.
+- **Privacy**: logs never contain config content or parser messages (they may include secrets).
+- **Errors**: `ConfigError` (invalid TOML), `ConflictError` (file changed mid-operation), `NoBackupError` (no usable backup — never writes defaults).
 
-## เป้าหมายคงที่
+## Fixed target
 
-`TARGET` ใน `guard.py` คำนวณจาก `CODEX_HOME` (ถ้ามี) หรือ `~/.codex` แล้วต่อด้วย `config.toml` โดยตั้งใจไม่มีตัวเลือก override ใน CLI
-เพื่อกันการเขียนทับไฟล์อื่นโดยไม่ตั้งใจ (การทดสอบส่ง target จำลองผ่าน `Guard(target=...)`)
+`TARGET` in `guard.py` is resolved from `CODEX_HOME` (if set) or `~/.codex`, plus `config.toml`. The CLI deliberately has no override,
+to avoid accidentally overwriting another file (tests pass a mock target via `Guard(target=...)`).

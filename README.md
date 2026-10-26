@@ -1,94 +1,94 @@
 # Codex Config Guard
 
-[English](README.en.md) | ไทย
+English | [ไทย](README.th.md)
 
-ระบบตรวจไวยากรณ์และกู้คืน `config.toml` ของ Codex บน Windows อัตโนมัติ โดยไม่ต้องเปิด Codex ก่อน
-ไฟล์เป้าหมายคือ `%CODEX_HOME%\config.toml` หากตั้งตัวแปรไว้ มิฉะนั้นใช้ `%USERPROFILE%\.codex\config.toml`
+Automatic syntax checking and recovery for the Codex `config.toml` on Windows — works without opening Codex.
+The target file is `%CODEX_HOME%\config.toml` when that variable is set, otherwise `%USERPROFILE%\.codex\config.toml`.
 
-## ติดตั้งแบบง่าย
+## Quick install
 
-ต้องมี Windows 10/11 และ [Python 3.11 ขึ้นไป](https://www.python.org/downloads/windows/) (ติ๊ก *Add python.exe to PATH* ตอนติดตั้ง)
+Requires Windows 10/11 and [Python 3.11+](https://www.python.org/downloads/windows/) (tick *Add python.exe to PATH* during setup).
 
-1. ดาวน์โหลด: กด **Code → Download ZIP** บนหน้า GitHub แล้วแตกไฟล์ไว้ในที่ถาวร เช่น `Documents\Codex Config Guard`
-   (หรือ `git clone https://github.com/OkayOkay101/codex-config-guard.git`)
-2. ดับเบิลคลิก **`Install.cmd`** — ตรวจ config ปัจจุบัน สำรองชุดแรก แล้วลงทะเบียน Task Scheduler ให้ทำงานทุกครั้งที่ล็อกอิน (ไม่ต้องใช้สิทธิ์ผู้ดูแลระบบ)
-3. ดับเบิลคลิก **`Status.cmd`** เพื่อตรวจว่าทำงานแล้ว
+1. Download: click **Code → Download ZIP** on GitHub and extract it to a permanent location, e.g. `Documents\Codex Config Guard`
+   (or `git clone https://github.com/OkayOkay101/codex-config-guard.git`).
+2. Double-click **`Install.cmd`** — it validates your current config, takes the first backup and registers a Task Scheduler task that runs at every logon (no administrator rights needed).
+3. Double-click **`Status.cmd`** to confirm it is running.
 
-> อย่าย้ายโฟลเดอร์หลังติดตั้ง หากย้ายให้รัน `Install.cmd` ใหม่
-> config ปัจจุบันต้องเป็น TOML ที่ถูกต้องก่อนติดตั้ง มิฉะนั้นจะไม่ลงทะเบียนงาน
+> Do not move the folder after installing; if you do, run `Install.cmd` again.
+> Your current config must be valid TOML, otherwise the task is not registered.
 
-## ใช้งาน
+## Usage
 
-| ทางลัด | คำสั่ง PowerShell (ในโฟลเดอร์เครื่องมือ) | หน้าที่ |
+| Shortcut | PowerShell (from the tool folder) | Purpose |
 |---|---|---|
-| `Status.cmd` | `.\Guard.ps1 status` | ตรวจไฟล์จริง จำนวนสำเนา และ heartbeat |
-| — | `.\Guard.ps1 check` | ตรวจไวยากรณ์อย่างเดียว |
-| ลากไฟล์ใส่ `Apply-Draft.cmd` | `.\Guard.ps1 apply C:\path\draft.toml` | ตรวจไฟล์ร่าง สำรอง แล้วแทนที่แบบ atomic |
-| `Restore.cmd` | `.\Guard.ps1 restore` | คืนสำเนาล่าสุดที่ผ่านการตรวจ |
+| `Status.cmd` | `.\Guard.ps1 status` | Check the live file, backup count and heartbeat |
+| — | `.\Guard.ps1 check` | Syntax check only |
+| Drop a file on `Apply-Draft.cmd` | `.\Guard.ps1 apply C:\path\draft.toml` | Validate a draft, back up, then replace atomically |
+| `Restore.cmd` | `.\Guard.ps1 restore` | Restore the latest verified backup |
 
-`apply` รักษา bytes ความคิดเห็น และรูปแบบขึ้นบรรทัดเดิม ไฟล์ร่างต้องเป็นคนละไฟล์กับ config จริง ส่วน `restore` จะไม่ย้อนรุ่นถ้าไฟล์ปัจจุบันตรงกับสำเนาล่าสุดอยู่แล้ว
+`apply` preserves bytes, comments and line endings; the draft must be a different file from the live config. `restore` does not roll back when the current file already matches the latest backup.
 
-ตัวเฝ้าดูใช้ `pythonw` (ไม่มีหน้าต่างคอนโซล) ตรวจทุก 2 วินาที และรอไฟล์นิ่งอย่างน้อย 3 วินาทีก่อนสำรองหรือกู้คืน
+The watcher runs under `pythonw` (no console window), polls every 2 seconds and waits for the file to be stable for at least 3 seconds before backing up or restoring.
 
-## การเขียนพาธ Windows ใน TOML
+## Windows paths in TOML
 
 ```toml
-command = 'C:\Program Files\nodejs\node.exe'   # literal string ไม่ต้อง escape
+command = 'C:\Program Files\nodejs\node.exe'   # literal string, no escaping
 ```
 
-หากใช้เครื่องหมายคำพูดคู่ ต้อง escape backslash (`\\`) ตัวแก้ไขที่รองรับ schema เพิ่มบรรทัดนี้ในไฟล์ร่างได้:
+With double quotes you must escape backslashes (`\\`). Schema-aware editors can use this line in a draft:
 
 ```toml
 #:schema https://developers.openai.com/codex/config-schema.json
 ```
 
-## ข้อมูลที่เก็บและความปลอดภัย
+## Stored data and security
 
-- `state/backups/` สำเนาที่ผ่านล่าสุด 20 รุ่น พร้อม SHA-256
-- `state/quarantine/` ไฟล์เสียก่อนกู้คืน ไม่ลบอัตโนมัติ
-- `state/events.jsonl` เวลา UTC ชนิดเหตุการณ์ hash และตำแหน่งผิดพลาด **ไม่มีเนื้อหา config** หมุน log เมื่อเกิน 2 MB
-- `state/` จำกัดสิทธิ์เฉพาะผู้ใช้ที่ติดตั้ง SYSTEM และ Administrators เพราะสำเนาอาจมี API key หรือ token
-- `state/`, `work/` และ `runtime.json` อยู่ใน `.gitignore` — **ห้ามแชร์หรือ commit โฟลเดอร์ `state/`**
-- เครื่องมือไม่ติดต่อเครือข่าย ไม่แก้ชื่อโมเดล นโยบายสิทธิ์ หรือการตั้งค่า MCP
+- `state/backups/` — last 20 verified copies with SHA-256 metadata
+- `state/quarantine/` — invalid files kept before recovery; never auto-deleted
+- `state/events.jsonl` — UTC time, event type, hashes and error position; **no config content**; rotated above 2 MB
+- `state/` is restricted to the installing user, SYSTEM and Administrators because backups may contain API keys or tokens
+- `state/`, `work/` and `runtime.json` are git-ignored — **never share or commit `state/`**
+- No network access; model names, permission policies and MCP settings are never changed
 
-## จัดการงานเบื้องหลัง / ถอนการติดตั้ง
+## Managing / uninstalling
 
 ```powershell
 Get-ScheduledTaskInfo -TaskName 'Codex Config Guard'
 Stop-ScheduledTask    -TaskName 'Codex Config Guard'
 Start-ScheduledTask   -TaskName 'Codex Config Guard'
-Unregister-ScheduledTask -TaskName 'Codex Config Guard' -Confirm:$false   # ถอนการติดตั้ง
+Unregister-ScheduledTask -TaskName 'Codex Config Guard' -Confirm:$false   # uninstall
 ```
 
-หลังถอนงาน หากยังต้องการสำเนาเดิม ให้เก็บ `state/backups/` ไว้ก่อนลบโฟลเดอร์
+Keep `state/backups/` before deleting the folder if you may need old copies.
 
-## ข้อจำกัด
+## Limitations
 
-- TOML ที่ถูกไวยากรณ์อาจยังมีค่าที่ Codex ไม่รองรับ
-- เมื่อโปรแกรมอื่นเขียน config ตรง ๆ มีช่วงสั้น ๆ ก่อนกู้คืนที่ Codex อาจอ่านไฟล์เสียได้ ใช้ `apply` เพื่อตรวจก่อนแตะไฟล์จริง
-- หากสำเนาทุกชุดเสีย จะไม่เขียนค่าเริ่มต้นทับ และตัวเฝ้าดูทำงานเฉพาะช่วงที่ผู้ใช้ล็อกอิน
-- การแจ้งเตือนเป็น tray balloon ซึ่ง Windows อาจซ่อน ตรวจ `status` หรือ log ได้เสมอ
+- Syntactically valid TOML may still contain values Codex does not support.
+- When another program writes the config directly, there is a short window before recovery in which Codex could read a broken file. Use `apply` to validate before touching the live file.
+- If every backup is invalid, no default is written. The watcher only runs while the user is logged on.
+- Notifications are tray balloons that Windows may hide; `status` and the log are always available.
 
-## เครื่องมือแนะนำ: Codex Sidebar Repair
+## Recommended companion: Codex Sidebar Repair
 
-หากปัญหาคือ **โปรเจกต์หรือการจัดกลุ่มแชตหายจาก sidebar ของ Codex desktop** (ข้อมูลยังอยู่ในฐานข้อมูล) แนะนำ
-[Swih/codex-sidebar-repair](https://github.com/Swih/codex-sidebar-repair) — เครื่องมือกู้คืนแบบไม่เป็นทางการบน Windows (MIT License)
+If your problem is **projects or chat grouping missing from the Codex desktop sidebar** (while the data is still in the database), try
+[Swih/codex-sidebar-repair](https://github.com/Swih/codex-sidebar-repair) — an unofficial Windows recovery utility (MIT License).
 
-- ใช้ Node.js 24 ขึ้นไป ไม่มี dependency ไม่ต้องใช้สิทธิ์ผู้ดูแลระบบ
-- `node repair-sidebar.cjs` ดูตัวอย่างโดยไม่แก้ไฟล์; ซ่อมจริงด้วย `--apply` หลังปิด Codex ทั้งหมด
-- อาศัยรูปแบบข้อมูลภายในที่อาจเปลี่ยนตามเวอร์ชัน
+- Node.js 24+, no dependencies, no administrator rights.
+- `node repair-sidebar.cjs` previews without changing files; apply with `--apply` after fully quitting Codex.
+- Relies on internal state formats that may change between versions.
 
-Config Guard ดูแลไฟล์ตั้งค่า ส่วน Sidebar Repair ดูแลสถานะ sidebar ใช้ร่วมกันได้
+Config Guard protects the settings file; Sidebar Repair restores sidebar state — they complement each other.
 
-## เอกสารเพิ่มเติม
+## More docs
 
-- [สถาปัตยกรรมและลำดับการทำงาน](docs/ARCHITECTURE.md) · [Architecture (English)](docs/ARCHITECTURE.en.md)
-- อ้างอิงการตั้งค่า Codex: https://learn.chatgpt.com/docs/config-file/config-reference
+- [Architecture](docs/ARCHITECTURE.md) · [สถาปัตยกรรม (ไทย)](docs/ARCHITECTURE.th.md)
+- Codex config reference: https://learn.chatgpt.com/docs/config-file/config-reference
 
-## ทดสอบ
+## Tests
 
 ```powershell
 python -m unittest discover -v
 ```
 
-การทดสอบใช้ไฟล์จำลองใน `work/` ไม่แตะ config จริง
+Tests use mock files under `work/` and never touch the real config.
