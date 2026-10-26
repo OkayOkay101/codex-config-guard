@@ -6,7 +6,7 @@
 |---|---|
 | `guard.py` | แกนหลัก: ตรวจ TOML (`tomllib`), สำรอง, กู้คืน, เฝ้าดู (`watch`) และ CLI |
 | `Guard.ps1` | ตัวเรียก `guard.py` ด้วย Python ที่ระบุใน `runtime.json` |
-| `Install.ps1` | สร้าง `runtime.json` และลงทะเบียน Task Scheduler ชื่อ *Codex Config Guard* |
+| `Install.ps1` / `Install.cmd` | สร้าง `runtime.json` และลงทะเบียน Task Scheduler ชื่อ *Codex Config Guard* |
 | `Verify-Installation.ps1` | ตรวจว่างาน, Python และไฟล์ config อยู่ในสภาพพร้อมใช้ |
 | `Notify.ps1` | แสดง tray balloon เมื่อมีการกู้คืนหรือข้อผิดพลาด |
 | `Status.cmd` / `Restore.cmd` / `Apply-Draft.cmd` | ทางลัดดับเบิลคลิก |
@@ -28,5 +28,5 @@ config.toml เปลี่ยน ──► รอไฟล์นิ่ง ≥ 3
 
 ## เป้าหมายคงที่
 
-`TARGET` ถูกกำหนดตายตัวใน `guard.py` (`C:\Users\Smart\.codex\config.toml`) โดยตั้งใจ ไม่มีตัวเลือก override ใน CLI
-หากใช้บนเครื่องอื่น ให้แก้ค่าคงที่นี้และพาธใน `README.md` ก่อนติดตั้ง
+`TARGET` ใน `guard.py` คำนวณจาก `CODEX_HOME` (ถ้ามี) หรือ `~/.codex` แล้วต่อด้วย `config.toml` โดยตั้งใจไม่มีตัวเลือก override ใน CLI
+เพื่อกันการเขียนทับไฟล์อื่นโดยไม่ตั้งใจ (การทดสอบส่ง target จำลองผ่าน `Guard(target=...)`)

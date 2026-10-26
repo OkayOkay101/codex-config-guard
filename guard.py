@@ -17,7 +17,8 @@ import time
 import tomllib
 
 ROOT = Path(__file__).resolve().parent
-TARGET = Path(r'C:\Users\Smart\.codex\config.toml')
+# Fixed per machine: CODEX_HOME if set, otherwise ~/.codex (same rule as Codex).
+TARGET = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex') / 'config.toml'
 STATE = ROOT / 'state'
 
 

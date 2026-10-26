@@ -1,88 +1,94 @@
 # Codex Config Guard
 
-ระบบตรวจไวยากรณ์และกู้คืน `C:\Users\Smart\.codex\config.toml` บน Windows โดยไม่ต้องเปิด Codex ก่อน
+[English](README.en.md) | ไทย
+
+ระบบตรวจไวยากรณ์และกู้คืน `config.toml` ของ Codex บน Windows อัตโนมัติ โดยไม่ต้องเปิด Codex ก่อน
+ไฟล์เป้าหมายคือ `%CODEX_HOME%\config.toml` หากตั้งตัวแปรไว้ มิฉะนั้นใช้ `%USERPROFILE%\.codex\config.toml`
+
+## ติดตั้งแบบง่าย
+
+ต้องมี Windows 10/11 และ [Python 3.11 ขึ้นไป](https://www.python.org/downloads/windows/) (ติ๊ก *Add python.exe to PATH* ตอนติดตั้ง)
+
+1. ดาวน์โหลด: กด **Code → Download ZIP** บนหน้า GitHub แล้วแตกไฟล์ไว้ในที่ถาวร เช่น `Documents\Codex Config Guard`
+   (หรือ `git clone https://github.com/OkayOkay101/codex-config-guard.git`)
+2. ดับเบิลคลิก **`Install.cmd`** — ตรวจ config ปัจจุบัน สำรองชุดแรก แล้วลงทะเบียน Task Scheduler ให้ทำงานทุกครั้งที่ล็อกอิน (ไม่ต้องใช้สิทธิ์ผู้ดูแลระบบ)
+3. ดับเบิลคลิก **`Status.cmd`** เพื่อตรวจว่าทำงานแล้ว
+
+> อย่าย้ายโฟลเดอร์หลังติดตั้ง หากย้ายให้รัน `Install.cmd` ใหม่
+> config ปัจจุบันต้องเป็น TOML ที่ถูกต้องก่อนติดตั้ง มิฉะนั้นจะไม่ลงทะเบียนงาน
 
 ## ใช้งาน
 
-เปิด PowerShell แล้วใช้คำสั่งต่อไปนี้ (ไฟล์ร่างต้องเป็นคนละไฟล์กับ config จริง):
+| ทางลัด | คำสั่ง PowerShell (ในโฟลเดอร์เครื่องมือ) | หน้าที่ |
+|---|---|---|
+| `Status.cmd` | `.\Guard.ps1 status` | ตรวจไฟล์จริง จำนวนสำเนา และ heartbeat |
+| — | `.\Guard.ps1 check` | ตรวจไวยากรณ์อย่างเดียว |
+| ลากไฟล์ใส่ `Apply-Draft.cmd` | `.\Guard.ps1 apply C:\path\draft.toml` | ตรวจไฟล์ร่าง สำรอง แล้วแทนที่แบบ atomic |
+| `Restore.cmd` | `.\Guard.ps1 restore` | คืนสำเนาล่าสุดที่ผ่านการตรวจ |
 
-```powershell
-& 'C:\Users\Smart\Documents\Codex\Codex Config Guard\Guard.ps1' status
-& 'C:\Users\Smart\Documents\Codex\Codex Config Guard\Guard.ps1' check
-& 'C:\Users\Smart\Documents\Codex\Codex Config Guard\Guard.ps1' apply 'C:\path\draft.toml'
-& 'C:\Users\Smart\Documents\Codex\Codex Config Guard\Guard.ps1' restore
-```
+`apply` รักษา bytes ความคิดเห็น และรูปแบบขึ้นบรรทัดเดิม ไฟล์ร่างต้องเป็นคนละไฟล์กับ config จริง ส่วน `restore` จะไม่ย้อนรุ่นถ้าไฟล์ปัจจุบันตรงกับสำเนาล่าสุดอยู่แล้ว
 
-`apply` ตรวจไฟล์ร่าง สำรองไฟล์เดิม แล้วแทนที่แบบ atomic พร้อมตรวจอ่านกลับ รักษา bytes ความคิดเห็น และรูปแบบขึ้นบรรทัดเดิม คำสั่ง `restore` คืนสำเนาล่าสุดที่ผ่าน TOML และ hash; หากไฟล์ปัจจุบันตรงสำเนาล่าสุดอยู่แล้ว จะไม่ย้อนรุ่นโดยพลการ
+ตัวเฝ้าดูใช้ `pythonw` (ไม่มีหน้าต่างคอนโซล) ตรวจทุก 2 วินาที และรอไฟล์นิ่งอย่างน้อย 3 วินาทีก่อนสำรองหรือกู้คืน
 
-งาน Task Scheduler ชื่อ **Codex Config Guard** เริ่มเมื่อผู้ใช้ Smart เข้าสู่ Windows และเริ่มทันทีตอนติดตั้ง ใช้ pythonw จึงไม่มีหน้าต่างคอนโซล ตรวจทุก 2 วินาทีและรอไฟล์คงที่อย่างน้อย 3 วินาที ก่อนสำรองหรือกู้คืน หลีกเลี่ยงสำเนาขณะที่กำลังพิมพ์/เขียนไฟล์
-
-## การตั้งค่าพาธ Windows
-
-ใช้ literal string สำหรับพาธธรรมดา:
+## การเขียนพาธ Windows ใน TOML
 
 ```toml
-command = 'C:\Program Files\nodejs\node.exe'
+command = 'C:\Program Files\nodejs\node.exe'   # literal string ไม่ต้อง escape
 ```
 
-หากใช้เครื่องหมายคู่ ต้อง escape backslash ให้ถูกต้อง อย่าแก้พาธทั้งหมดด้วยการแทนที่ข้อความแบบกว้าง
-
-ตัวแก้ไขที่รองรับ TOML schema สามารถเพิ่มบรรทัดต่อไปนี้ในไฟล์ร่างได้ โดยระบบนี้ไม่ได้เพิ่มให้ไฟล์จริงอัตโนมัติ:
+หากใช้เครื่องหมายคำพูดคู่ ต้อง escape backslash (`\\`) ตัวแก้ไขที่รองรับ schema เพิ่มบรรทัดนี้ในไฟล์ร่างได้:
 
 ```toml
 #:schema https://developers.openai.com/codex/config-schema.json
 ```
 
-อ้างอิง: https://learn.chatgpt.com/docs/config-file/config-reference
+## ข้อมูลที่เก็บและความปลอดภัย
 
-## ตรวจสอบและสำรอง
+- `state/backups/` สำเนาที่ผ่านล่าสุด 20 รุ่น พร้อม SHA-256
+- `state/quarantine/` ไฟล์เสียก่อนกู้คืน ไม่ลบอัตโนมัติ
+- `state/events.jsonl` เวลา UTC ชนิดเหตุการณ์ hash และตำแหน่งผิดพลาด **ไม่มีเนื้อหา config** หมุน log เมื่อเกิน 2 MB
+- `state/` จำกัดสิทธิ์เฉพาะผู้ใช้ที่ติดตั้ง SYSTEM และ Administrators เพราะสำเนาอาจมี API key หรือ token
+- `state/`, `work/` และ `runtime.json` อยู่ใน `.gitignore` — **ห้ามแชร์หรือ commit โฟลเดอร์ `state/`**
+- เครื่องมือไม่ติดต่อเครือข่าย ไม่แก้ชื่อโมเดล นโยบายสิทธิ์ หรือการตั้งค่า MCP
 
-- `state/backups/`: สำเนา TOML ที่ผ่านล่าสุด 20 รุ่น พร้อม metadata SHA-256; ไม่ใช้ไฟล์ backup เดิมของเครื่องโดยอัตโนมัติ
-- `state/quarantine/`: ไฟล์เสียก่อนกู้คืน ไม่ลบอัตโนมัติ เพราะอาจต้องดึงการแก้ไขล่าสุดคืน
-- `state/events.jsonl`: เวลา UTC, ชนิดเหตุการณ์, hash และตำแหน่งผิดพลาด ไม่มีเนื้อหา config; หมุน log เมื่อเกิน 2 MB
-- `status`: ตรวจไฟล์จริง พร้อมจำนวนสำเนาที่ตรวจผ่านและ heartbeat ล่าสุด (`heartbeat_recent`); heartbeat ไม่ใช่หลักฐานว่าโมเดลหรือ MCP ทำงาน
-- `state/` จำกัดสิทธิ์ให้ผู้ใช้ที่ติดตั้ง, SYSTEM และ Administrators เพราะสำเนาอาจมีข้อมูลลับ
-- การแจ้งเตือนใช้ Windows tray balloon และอาจถูกซ่อนโดยการตั้งค่าการแจ้งเตือนของ Windows; ตรวจสถานะ/log ได้เสมอ
+## จัดการงานเบื้องหลัง / ถอนการติดตั้ง
 
 ```powershell
-Get-ScheduledTask -TaskName 'Codex Config Guard'
 Get-ScheduledTaskInfo -TaskName 'Codex Config Guard'
-Stop-ScheduledTask -TaskName 'Codex Config Guard'
-Start-ScheduledTask -TaskName 'Codex Config Guard'
+Stop-ScheduledTask    -TaskName 'Codex Config Guard'
+Start-ScheduledTask   -TaskName 'Codex Config Guard'
+Unregister-ScheduledTask -TaskName 'Codex Config Guard' -Confirm:$false   # ถอนการติดตั้ง
 ```
 
-หากต้องการปิดถาวร ใช้ `Stop-ScheduledTask` แล้ว `Disable-ScheduledTask` สำหรับชื่อนี้ การถอนงานใช้ `Unregister-ScheduledTask -TaskName 'Codex Config Guard'` และเก็บสำเนาไว้ก่อนลบโฟลเดอร์เครื่องมือ
+หลังถอนงาน หากยังต้องการสำเนาเดิม ให้เก็บ `state/backups/` ไว้ก่อนลบโฟลเดอร์
 
-ติดตั้งซ้ำได้ด้วย `Install.ps1` จะสำรองนิยามงานเดิมที่เป็นของเครื่องมือนี้ก่อนเปลี่ยน ระบบไม่แก้ MCP หรือ TokenSave
+## ข้อจำกัด
 
-## ขอบเขต
-
-TOML ที่ถูกต้องอาจยังมีค่าที่ Codex ไม่รองรับ เครื่องมือไม่เปลี่ยนชื่อโมเดล นโยบายสิทธิ์ หรือการตั้งค่า MCP ให้เอง และไม่ติดต่อบริการภายนอก
-
-เมื่อโปรแกรมอื่นเขียน config ตรง ยังมีช่วงสั้น ๆ ก่อนกู้คืนที่ Codex อาจอ่านไฟล์เสียได้ ตัวเฝ้าดูตรวจ hash ก่อนแทนที่และใช้ lock ระหว่างคำสั่งของเครื่องมือ แต่ไม่สามารถบังคับให้โปรแกรมอื่นถือ lock เดียวกัน จึงยังมีช่องว่างเล็กมากระหว่างตรวจ hash กับ atomic replace ใช้ `apply` เพื่อให้การบันทึกภายใต้เครื่องมือนี้ตรวจผ่านก่อนแตะไฟล์จริง
-
-หากสำเนาทุกชุดเสีย จะไม่เขียนค่าเริ่มต้นทับ หากไฟล์ถูกล็อกหรือสิทธิ์ไม่พอจะบันทึกเหตุการณ์และลองใหม่ ตัวเฝ้าดูทำงานในช่วงที่ผู้ใช้ล็อกอิน ไม่ใช่บริการก่อนเข้าระบบ
+- TOML ที่ถูกไวยากรณ์อาจยังมีค่าที่ Codex ไม่รองรับ
+- เมื่อโปรแกรมอื่นเขียน config ตรง ๆ มีช่วงสั้น ๆ ก่อนกู้คืนที่ Codex อาจอ่านไฟล์เสียได้ ใช้ `apply` เพื่อตรวจก่อนแตะไฟล์จริง
+- หากสำเนาทุกชุดเสีย จะไม่เขียนค่าเริ่มต้นทับ และตัวเฝ้าดูทำงานเฉพาะช่วงที่ผู้ใช้ล็อกอิน
+- การแจ้งเตือนเป็น tray balloon ซึ่ง Windows อาจซ่อน ตรวจ `status` หรือ log ได้เสมอ
 
 ## เครื่องมือแนะนำ: Codex Sidebar Repair
 
-หากปัญหาไม่ใช่ `config.toml` แต่เป็น **โปรเจกต์หรือการจัดกลุ่มแชตหายจาก sidebar ของ Codex desktop** (ข้อมูลยังอยู่ในฐานข้อมูล) แนะนำ
+หากปัญหาคือ **โปรเจกต์หรือการจัดกลุ่มแชตหายจาก sidebar ของ Codex desktop** (ข้อมูลยังอยู่ในฐานข้อมูล) แนะนำ
 [Swih/codex-sidebar-repair](https://github.com/Swih/codex-sidebar-repair) — เครื่องมือกู้คืนแบบไม่เป็นทางการบน Windows (MIT License)
 
-- ต้องใช้ Node.js 24 ขึ้นไป ไม่มี dependency ไม่ต้องใช้สิทธิ์ผู้ดูแลระบบ
-- โหมด preview (`node repair-sidebar.cjs`) ไม่แก้ไฟล์ใด ๆ; สั่งซ่อมจริงด้วย `--apply` หลังปิด Codex ทั้งหมด
-- อ่าน `.codex-global-state.json` และ `state_5.sqlite` ใน `CODEX_HOME` และอาศัยรูปแบบภายในที่อาจเปลี่ยนตามเวอร์ชัน
+- ใช้ Node.js 24 ขึ้นไป ไม่มี dependency ไม่ต้องใช้สิทธิ์ผู้ดูแลระบบ
+- `node repair-sidebar.cjs` ดูตัวอย่างโดยไม่แก้ไฟล์; ซ่อมจริงด้วย `--apply` หลังปิด Codex ทั้งหมด
+- อาศัยรูปแบบข้อมูลภายในที่อาจเปลี่ยนตามเวอร์ชัน
 
-ทั้งสองเครื่องมือทำงานเสริมกัน: Config Guard ดูแลไฟล์ตั้งค่า ส่วน Sidebar Repair ดูแลสถานะ sidebar
+Config Guard ดูแลไฟล์ตั้งค่า ส่วน Sidebar Repair ดูแลสถานะ sidebar ใช้ร่วมกันได้
 
 ## เอกสารเพิ่มเติม
 
-- [สถาปัตยกรรมและลำดับการทำงาน](docs/ARCHITECTURE.md)
+- [สถาปัตยกรรมและลำดับการทำงาน](docs/ARCHITECTURE.md) · [Architecture (English)](docs/ARCHITECTURE.en.md)
+- อ้างอิงการตั้งค่า Codex: https://learn.chatgpt.com/docs/config-file/config-reference
 
 ## ทดสอบ
 
 ```powershell
-Set-Location 'C:\Users\Smart\Documents\Codex\Codex Config Guard'
 python -m unittest discover -v
 ```
 
-การทดสอบสร้างไฟล์จำลองใน `work/` ไม่ทำให้ config จริงเสีย
+การทดสอบใช้ไฟล์จำลองใน `work/` ไม่แตะ config จริง
