@@ -92,3 +92,7 @@ python -m unittest discover -v
 ```
 
 Tests use mock files under `work/` and never touch the real config.
+
+## License
+
+[MIT No Attribution (MIT-0)](LICENSE) — use, modify and redistribute freely, commercially or not, without keeping the copyright notice.
