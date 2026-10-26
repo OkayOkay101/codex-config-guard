@@ -1,0 +1,6 @@
+# ข้อมูลส่วนตัว: สำเนา config อาจมีความลับ
+state/
+work/
+runtime.json
+__pycache__/
+*.pyc
